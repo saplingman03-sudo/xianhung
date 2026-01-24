@@ -7,6 +7,8 @@ from tkinter.scrolledtext import ScrolledText
 
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 
+#        input("⏸ 已暫停（畫面保留中），處理完請按 Enter 繼續或關閉…") debug時需要
+
 LOGIN_URL = "https://hp8.pokp02.net/index.php?ctrl=login_c.php"
 
 
@@ -24,13 +26,15 @@ def run_to_userlist_and_fill(username: str, password: str, target_account: str, 
         page.goto(LOGIN_URL, wait_until="domcontentloaded")
         page.wait_for_timeout(600)
 
-        # 2) 找到帳密輸入框
-        user_input = page.locator(
-            'input[placeholder*="账号"], input[placeholder*="帳號"], input[name*="user"], input[name*="account"], input[name*="login"]'
-        ).first
-        pass_input = page.locator(
-            'input[type="password"], input[placeholder*="密码"], input[placeholder*="密碼"]'
-        ).first
+        # 切換語言為 English（登入前）
+        page.locator("#language-type").click()
+        page.wait_for_timeout(300)  # 給下拉一點動畫時間（可留）
+
+        page.locator("#language-list-en").click()
+        page.wait_for_timeout(500)  # 等語言套用
+
+        user_input = page.get_by_placeholder("Account")
+        pass_input = page.get_by_placeholder("password")
 
         # 兜底
         if user_input.count() == 0:
@@ -49,40 +53,57 @@ def run_to_userlist_and_fill(username: str, password: str, target_account: str, 
         pass_input.click()
         pass_input.fill(password)
 
-        # 4) 點登入
-        login_btn = page.get_by_role("button", name="登入")
-        if login_btn.count() == 0:
-            login_btn = page.locator('button:has-text("登入"), input[type="submit"], button[type="submit"]').first
-        if login_btn.count() == 0:
-            browser.close()
-            raise RuntimeError("找不到登入按鈕")
 
-        log("➡️ 送出登入…")
-        login_btn.click()
+        login_btn = page.get_by_role("button", name="LOGIN")
+        if login_btn.count() == 0:
+            login_btn = page.locator('button:has-text("LOGIN"), input[type="submit"], button[type="submit"]').first
+
+
+        log("➡️ 送出登入（第 1 次）")
+        login_btn.scroll_into_view_if_needed()
+        login_btn.click(force=True)
+
+        page.wait_for_timeout(2000)
+
+        log("➡️ 送出登入（第 2 次）")
+        login_btn.scroll_into_view_if_needed()
+        login_btn.click(force=True)
+
+
 
         # 5) 等登入成功（不要用 expect_navigation）
         try:
             page.wait_for_url("**ctrl=ctrl_home**", timeout=15000)
         except PWTimeout:
-            page.locator("text=用户管理").wait_for(timeout=15000)
+            page.locator("text=User Management").wait_for(timeout=15000)
 
         log(f"✅ 已登入：{page.url}")
         page.wait_for_timeout(400)
 
-        # 6) 左側選單：用户管理 → 用户列表
-        log("📂 前往：用户管理 → 用户列表")
-        page.get_by_text("用户管理", exact=True).click()
+        log("📂 前往： User Management → User List")
+        page.get_by_text("User Management", exact=True).click()
         page.wait_for_timeout(200)
-        page.get_by_text("用户列表", exact=True).click()
+        page.get_by_text("User List", exact=True).click()
+        input("⏸ 已暫停（畫面保留中），處理完請按 Enter 繼續或關閉…")
 
-        # 7) 等「請搜尋帳號」輸入框出現並 fill
-        log(f"🔎 填入搜尋帳號：{target_account}")
-        search_input = page.locator(
-            'input[placeholder="请搜寻帐号"], input[placeholder*="搜尋"], input[placeholder*="搜索"]'
-        ).first
-        search_input.wait_for(timeout=15000)
-        search_input.click()
-        search_input.fill(target_account)
+        search_btn = page.locator('a.btn.action:has-text("Search")')
+        search_btn.wait_for(state="visible", timeout=10000)
+        search_btn.click()
+
+
+        print("被看到了")
+
+
+        
+
+
+        log("🟢 已填入完成。")
+
+
+
+
+
+
 
         log("🟢 已填入完成。現在停住讓你確認畫面（不按搜尋）。")
         # 8) 停住：不關瀏覽器，讓你目視確認
