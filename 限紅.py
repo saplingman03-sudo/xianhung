@@ -1,3 +1,4 @@
+#封存 目前覺得沒有希望做自動化
 import os
 import threading
 import traceback
@@ -158,6 +159,159 @@ def run_to_userlist_and_fill(username: str, password: str, target_account: str, 
         result_link.click(force=True)
 
         log(f"✅ 已點擊 target account：{aid}")
+        page.wait_for_timeout(8000)
+        log("已等待八秒")
+        log("✏️ 準備點擊 Edit 按鈕…")
+
+        # Edit 按鈕通常在同一個 frame（User List 那個）
+        edit_btn = target_frame.locator('button[onclick*="UserAdd.php"]').first
+
+        edit_btn.wait_for(state="visible", timeout=15000)
+        edit_btn.click(force=True)
+
+        log("✅ 已點擊 Edit，進入編輯頁")
+        page.wait_for_timeout(4000)
+        log("已等待4秒")
+        def find_frame_containing(page):
+            """
+            找出包含 Code / Handicap / Baccarat 的 iframe
+            不吃可視範圍（就算畫面還沒滑到也能找到）
+            """
+            keywords = [
+                "Handicap",
+                "Code",
+            ]
+
+            for i, f in enumerate(page.frames):
+                try:
+                    hit = 0
+                    for k in keywords:
+                        if f.locator(f"text={k}").count() > 0:
+                            hit += 1
+                    if hit >= 1:  # 命中至少一個就很有可能
+                        return f
+                except:
+                    pass
+
+            return None
+        frame = find_frame_containing(page)
+        if not frame:
+            raise RuntimeError("找不到包含 Code / Handicap 的 iframe")
+        log("✅ 找到 Code/Handicap 的 iframe，準備勾選 Code=4 那列…")
+        frame.locator("text=Code").first.wait_for(state="visible", timeout=15000)
+        target_code = "4"
+
+        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
+        code_badge.wait_for(state="visible", timeout=15000)
+
+        # 找同一排、在它前面的第一個 checkbox 容器（依你圖是 span::before）
+        box = code_badge.locator("xpath=preceding::span[1]").first
+        box.wait_for(state="attached", timeout=15000)
+
+        # 點 box 的父層，因為 ::before 不能點
+        click_target = box.locator("xpath=..").first
+        click_target.click(force=True)
+        target_code = "8"
+
+        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
+        code_badge.wait_for(state="visible", timeout=15000)
+
+        # 找同一排、在它前面的第一個 checkbox 容器（依你圖是 span::before）
+        box = code_badge.locator("xpath=preceding::span[1]").first
+        box.wait_for(state="attached", timeout=15000)
+
+        # 點 box 的父層，因為 ::before 不能點
+        click_target = box.locator("xpath=..").first
+        click_target.click(force=True)
+        target_code = "13"
+
+        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
+        code_badge.wait_for(state="visible", timeout=15000)
+
+        # 找同一排、在它前面的第一個 checkbox 容器（依你圖是 span::before）
+        box = code_badge.locator("xpath=preceding::span[1]").first
+        box.wait_for(state="attached", timeout=15000)
+
+        # 點 box 的父層，因為 ::before 不能點
+        click_target = box.locator("xpath=..").first
+        click_target.click(force=True)
+
+        target_code = "17"
+        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
+        code_badge.wait_for(state="visible", timeout=15000)
+        # 找同一排、在它前面的第一個 checkbox 容器（依你圖是 span::before）
+        box = code_badge.locator("xpath=preceding::span[1]").first
+        box.wait_for(state="attached", timeout=15000)
+        click_target = box.locator("xpath=..").first
+        click_target.click(force=True)
+        target_code = "58"
+        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
+        code_badge.wait_for(state="visible", timeout=15000)
+
+        box = code_badge.locator("xpath=preceding::span[1]").first
+        box.wait_for(state="attached", timeout=15000)
+
+        click_target = box.locator("xpath=..").first
+        click_target.click(force=True)
+        target_code = "21"
+        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
+        code_badge.wait_for(state="visible", timeout=15000)
+
+        box = code_badge.locator("xpath=preceding::span[1]").first
+        box.wait_for(state="attached", timeout=15000)
+
+        click_target = box.locator("xpath=..").first
+        click_target.click(force=True)
+        target_code = "23"
+        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
+        code_badge.wait_for(state="visible", timeout=15000)
+
+        box = code_badge.locator("xpath=preceding::span[1]").first
+        box.wait_for(state="attached", timeout=15000)
+
+        click_target = box.locator("xpath=..").first
+        click_target.click(force=True)
+        target_code = "25"
+        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
+        code_badge.wait_for(state="visible", timeout=15000)
+
+        box = code_badge.locator("xpath=preceding::span[1]").first
+        box.wait_for(state="attached", timeout=15000)
+
+        click_target = box.locator("xpath=..").first
+        click_target.click(force=True)
+        target_code = "27"
+        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
+        code_badge.wait_for(state="visible", timeout=15000)
+
+        box = code_badge.locator("xpath=preceding::span[1]").first
+        box.wait_for(state="attached", timeout=15000)
+
+        click_target = box.locator("xpath=..").first
+        click_target.click(force=True)
+        target_code = "172"
+        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
+        code_badge.wait_for(state="visible", timeout=15000)
+
+        box = code_badge.locator("xpath=preceding::span[1]").first
+        box.wait_for(state="attached", timeout=15000)
+
+        click_target = box.locator("xpath=..").first
+        click_target.click(force=True)
+
+
+        log(f"✅ 已點擊 Code={target_code} 那列的 checkbox 欄位")
+
+
+
+
+
+
+
+
+
+
+
         input("⏸ 已暫停（畫面保留中），處理完請按 Enter 繼續或關閉…")
 
 
@@ -165,7 +319,7 @@ def run_to_userlist_and_fill(username: str, password: str, target_account: str, 
  
 
         # 8) 停住：不關瀏覽器，讓你目視確認
-        page.pause()
+        #page.pause()
         # 如果你按「Resume」繼續，這裡才會跑到 close
         browser.close()
 
