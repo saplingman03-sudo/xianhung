@@ -84,28 +84,86 @@ def run_to_userlist_and_fill(username: str, password: str, target_account: str, 
         page.get_by_text("User Management", exact=True).click()
         page.wait_for_timeout(200)
         page.get_by_text("User List", exact=True).click()
+        #input("⏸ 已暫停（畫面保留中），處理完請按 Enter 繼續或關閉…")
+
+        # ✅ 等 User List 頁面穩定（你可以用你頁面上一定會出現的字）
+        page.wait_for_timeout(8000)
+        log("🧩 掃描所有 frames：找 search / placeholder …")
+
+        keywords = ["id=\"search\"", "Please search", "name=\"account\"", "input#search"]
+        hit_frames = []
+
+        for i, f in enumerate(page.frames):
+            try:
+                html = f.content()
+                hit = any(k in html for k in keywords)
+                log(f"[frame {i}] url={f.url} hit={hit}")
+                if hit:
+                    hit_frames.append((i, f.url))
+            except Exception as e:
+                log(f"[frame {i}] url={f.url} read error: {e}")
+
+        if not hit_frames:
+            raise RuntimeError("所有 frame 都沒包含 search 相關字樣（可能是新分頁或更深層 iframe）")
+
+        log(f"✅ 命中 frames: {hit_frames}")
+        # 找第一個命中 frame
+        target_frame = None
+        for f in page.frames:
+            try:
+                html = f.content()
+                if "id=\"search\"" in html or "Please search" in html or "name=\"account\"" in html:
+                    target_frame = f
+                    break
+            except:
+                pass
+
+        if not target_frame:
+            raise RuntimeError("命中 frame 列表存在，但取不到 target_frame（奇怪）")
+
+        log(f"🎯 使用 frame: {target_frame.url}")
+
+        search = target_frame.locator('input#search, input[name="account"]').first
+        search.wait_for(state="attached", timeout=15000)
+        search.click(force=True)
+        search.fill(target_account)
+        log(f"✅ 已填入：{target_account}")
+
+        for i, f in enumerate(page.frames):
+            print(i, f.url)
+        target_frame = None
+        for f in page.frames:
+            if f.locator('a[data-target="#popwindow"]').count() > 0:
+                target_frame = f
+                break
+
+        if not target_frame:
+            raise RuntimeError("找不到 Search 按鈕所在的 frame")
+
+        target_frame.locator('a[data-target="#popwindow"]').first.click(force=True)
+
+        log("🚀 搜尋指令已送出！")
+
+                # 1) 確認 popwindow 還在（保險）
+        modal = target_frame.locator("#popwindow")
+        modal.wait_for(state="visible", timeout=15000)
+
+        log("🔎 搜尋結果彈窗已存在，準備點擊帳號…")
+
+        # 2) 用 href 的 aid 參數找連結（最穩）
+        aid = target_account
+        result_link = modal.locator(f'a[href*="aid={aid}"]').first
+
+        result_link.wait_for(state="visible", timeout=15000)
+        result_link.click(force=True)
+
+        log(f"✅ 已點擊 target account：{aid}")
         input("⏸ 已暫停（畫面保留中），處理完請按 Enter 繼續或關閉…")
 
-        search_btn = page.locator('a.btn.action:has-text("Search")')
-        search_btn.wait_for(state="visible", timeout=10000)
-        search_btn.click()
 
 
-        print("被看到了")
+ 
 
-
-        
-
-
-        log("🟢 已填入完成。")
-
-
-
-
-
-
-
-        log("🟢 已填入完成。現在停住讓你確認畫面（不按搜尋）。")
         # 8) 停住：不關瀏覽器，讓你目視確認
         page.pause()
         # 如果你按「Resume」繼續，這裡才會跑到 close
