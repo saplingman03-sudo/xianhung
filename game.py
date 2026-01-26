@@ -51,7 +51,7 @@ add_credit_mode = False  # 開分模式
 # --- 游戲速度變數 ---
 game_speed = 1  # 遊戲播放速度倍數，預設×1
 speed_show_menu = False  # 是否顯示速度菜單
-speed_options = [1, 2, 5, 10, 100, 1000, 10000]
+speed_options = [1, 2, 5, 10, 100]
 animation_speed = 10  # 小雞移動速度
 
 # --- 提示文字變數 ---
