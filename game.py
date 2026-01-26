@@ -51,8 +51,13 @@ add_credit_mode = False  # 開分模式
 # --- 游戲速度變數 ---
 game_speed = 1  # 遊戲播放速度倍數，預設×1
 speed_show_menu = False  # 是否顯示速度菜單
-speed_options = [1, 2, 5, 10, 100]
+speed_options = [1, 2, 5, 10, 100, 1000, 10000]
 animation_speed = 10  # 小雞移動速度
+
+# --- 提示文字變數 ---
+hint_text = ""
+hint_timer = 0
+hint_duration = 180  # 提示顯示幀數（約3秒）
 
 # --- 數字鍵盤按鈕 ---
 numpad_buttons = []
@@ -127,8 +132,12 @@ while running:
                 if random.random() < win_rate:
                     current_step += 1
                     target_x += lane_width
+                    hint_text = "你好厲害 繼續加油"
+                    hint_timer = hint_duration
                 else:
                     game_over, game_active = True, False
+                    hint_text = "傻逼窮光蛋"
+                    hint_timer = hint_duration
             else:
                 prize = int(bet_amount * (1.2 ** current_step))
                 balance += prize
@@ -140,6 +149,14 @@ while running:
     for i in range(17):
         x = 50 + (i * lane_width)
         pygame.draw.line(screen, (210, 210, 210), (x, 150), (x, 450), 2)
+    
+    # 繪製每一步的可得獎金
+    for step in range(1, 16):
+        x = 50 + (step * lane_width)
+        prize_at_step = bet_amount * (1.2 ** step)
+        prize_text = f"${prize_at_step:.0f}"
+        txt = font_small.render(prize_text, True, BLACK)
+        screen.blit(txt, (x - txt.get_width() // 2, 120))
 
     # 事件偵測
     for event in pygame.event.get():
@@ -311,8 +328,12 @@ while running:
                         if random.random() < win_rate:
                             current_step += 1
                             target_x += lane_width
+                            hint_text = "你好厲害 繼續加油"
+                            hint_timer = hint_duration
                         else:
                             game_over, game_active = True, False
+                            hint_text = "傻逼窮光蛋"
+                            hint_timer = hint_duration
                     elif btn_cash_rect.collidepoint(pos) and game_active and not (game_over or cashed_out):
                         if current_step > 0:
                             prize = int(bet_amount * (1.2 ** current_step))
@@ -330,6 +351,10 @@ while running:
     color = RED if game_over else (GREEN if cashed_out else YELLOW)
     pygame.draw.rect(screen, color, (chicken_x, chicken_y, 40, 40), border_radius=5)
     pygame.draw.rect(screen, BLACK, (chicken_x, chicken_y, 40, 40), 2, border_radius=5)
+    
+    # 繪製提示文字
+    if hint_timer > 0:
+        hint_timer -= 1
 
     # 繪製按鈕
     draw_button(btn_bet_rect, f"下注 ${bet_amount}", YELLOW, not game_active)
@@ -493,7 +518,13 @@ while running:
 
     # 數據與統計
     current_prize = int(bet_amount * (1.2 ** current_step)) if current_step > 0 else 0
-    screen.blit(font.render(f"餘額: ${balance}  目前獎金: ${current_prize}", True, BLACK), (50, 85))
+    stat_text = f"餘額: ${balance}  目前獎金: ${current_prize}"
+    screen.blit(font.render(stat_text, True, BLACK), (50, 85))
+    
+    # 提示文字顯示在獎金旁邊
+    if hint_timer > 0:
+        hint_display = font.render(hint_text, True, RED)
+        screen.blit(hint_display, (450, 85))
     
     pygame.draw.rect(screen, (30, 30, 30), (0, 500, 1200, 50))
     rtp = (total_won / total_spent * 100) if total_spent > 0 else 0
