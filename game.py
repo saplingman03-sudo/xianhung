@@ -53,10 +53,10 @@ cashed_out = False
 # --- 難度模式變數 ---
 difficulty_mode = None  # None=未選, "easy"=簡單, "normal"=普通, "hard"=困難, "crazy"=瘋狂
 difficulty_modes = {
-    "easy": {"win_rate": 0.53, "multiplier": 1.8, "name": "簡單"},
-    "normal": {"win_rate": 0.4, "multiplier": 2.4, "name": "普通"},
-    "hard": {"win_rate": 0.24, "multiplier": 4.0, "name": "困難"},
-    "crazy": {"win_rate": 0.12, "multiplier": 8.0, "name": "瘋狂"}
+    "easy": {"win_rate": 0.8, "multiplier": 1.2, "name": "簡單"},
+    "normal": {"win_rate": 0.6, "multiplier": 1.6, "name": "普通"},
+    "hard": {"win_rate": 0.4, "multiplier": 2.4, "name": "困難"},
+    "crazy": {"win_rate": 0.2, "multiplier": 4.8, "name": "瘋狂"}
 }
 
 # --- 自動模式變數 ---
