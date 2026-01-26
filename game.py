@@ -16,6 +16,18 @@ def get_chinese_font(size):
             return pygame.font.SysFont(f, size)
     return pygame.font.SysFont(None, size)
 
+# --- 數字縮寫函數 ---
+def format_number(num):
+    """將大數字縮寫為 K、M、B 等格式"""
+    if num >= 1_000_000_000:
+        return f"${num/1_000_000_000:.1f}B"
+    elif num >= 1_000_000:
+        return f"${num/1_000_000:.1f}M"
+    elif num >= 1_000:
+        return f"${num/1_000:.1f}K"
+    else:
+        return f"${num:.0f}"
+
 font = get_chinese_font(22)
 font_stat = get_chinese_font(18)
 font_small = get_chinese_font(16)
@@ -37,6 +49,15 @@ win_rate = 0.8
 game_active = False
 game_over = False
 cashed_out = False
+
+# --- 難度模式變數 ---
+difficulty_mode = None  # None=未選, "easy"=簡單, "normal"=普通, "hard"=困難, "crazy"=瘋狂
+difficulty_modes = {
+    "easy": {"win_rate": 0.53, "multiplier": 1.8, "name": "簡單"},
+    "normal": {"win_rate": 0.4, "multiplier": 2.4, "name": "普通"},
+    "hard": {"win_rate": 0.24, "multiplier": 4.0, "name": "困難"},
+    "crazy": {"win_rate": 0.12, "multiplier": 8.0, "name": "瘋狂"}
+}
 
 # --- 自動模式變數 ---
 auto_mode = False
@@ -105,6 +126,12 @@ btn_add_credit = pygame.Rect(980, 20, 60, 30)
 btn_clear_credit = pygame.Rect(1050, 20, 60, 30)
 btn_speed_rect = pygame.Rect(980, 55, 130, 30)  # 遊戲速度按鈕
 
+# --- 難度模式按鈕 ---
+btn_easy = pygame.Rect(50, 450, 80, 40)
+btn_normal = pygame.Rect(150, 450, 80, 40)
+btn_hard = pygame.Rect(250, 450, 80, 40)
+btn_crazy = pygame.Rect(350, 450, 80, 40)
+
 def draw_button(rect, text, color, active=True):
     draw_color = color if active else GRAY
     pygame.draw.rect(screen, draw_color, rect, border_radius=10)
@@ -139,24 +166,39 @@ while running:
                     hint_text = "傻逼窮光蛋"
                     hint_timer = hint_duration
             else:
-                prize = int(bet_amount * (1.2 ** current_step))
+                # 根據難度模式計算奖金
+                multiplier = difficulty_modes[difficulty_mode]["multiplier"]
+                prize = int(bet_amount * (multiplier ** current_step))
                 balance += prize
                 total_won += prize
                 cashed_out, game_active = True, False
     
+    # 計算相機偏移（根據小雞位置動態調整視窗）
+    camera_offset = max(0, chicken_x - 400)  # 當小雞超過400像素時開始右移視窗
+    
     # 繪製背景
     pygame.draw.rect(screen, (240, 240, 240), (0, 150, 1200, 300))
-    for i in range(17):
-        x = 50 + (i * lane_width)
-        pygame.draw.line(screen, (210, 210, 210), (x, 150), (x, 450), 2)
     
-    # 繪製每一步的可得獎金
-    for step in range(1, 16):
-        x = 50 + (step * lane_width)
-        prize_at_step = bet_amount * (1.2 ** step)
-        prize_text = f"${prize_at_step:.0f}"
-        txt = font_small.render(prize_text, True, BLACK)
-        screen.blit(txt, (x - txt.get_width() // 2, 120))
+    # 繪製無限制步數的背景線
+    max_steps = int(camera_offset / lane_width) + 25
+    for i in range(int(camera_offset / lane_width), max_steps):
+        x = 50 + (i * lane_width) - camera_offset
+        if -100 < x < 1300:  # 只繪製在屏幕可見範圍內的線
+            pygame.draw.line(screen, (210, 210, 210), (x, 150), (x, 450), 2)
+    
+    # 繪製每一步的可得獎金（無限制步數）
+    max_prize_steps = int(camera_offset / lane_width) + 20
+    for step in range(max(1, int(camera_offset / lane_width)), max_prize_steps):
+        x = 50 + (step * lane_width) - camera_offset
+        if -50 < x < 1250:  # 只繪製在屏幕可見範圍內的文字
+            if difficulty_mode:
+                multiplier = difficulty_modes[difficulty_mode]["multiplier"]
+                prize_at_step = bet_amount * (multiplier ** step)
+            else:
+                prize_at_step = bet_amount * (1.2 ** step)
+            prize_text = format_number(prize_at_step)
+            txt = font_small.render(prize_text, True, BLACK)
+            screen.blit(txt, (x - txt.get_width() // 2, 120))
 
     # 事件偵測
     for event in pygame.event.get():
@@ -281,6 +323,20 @@ while running:
             
             # --- 以下只在非輸入模式執行 ---
             if not input_mode:
+                # --- 難度模式選擇（可隨時切換） ---
+                if btn_easy.collidepoint(pos):
+                    difficulty_mode = "easy"
+                    win_rate = difficulty_modes["easy"]["win_rate"]
+                elif btn_normal.collidepoint(pos):
+                    difficulty_mode = "normal"
+                    win_rate = difficulty_modes["normal"]["win_rate"]
+                elif btn_hard.collidepoint(pos):
+                    difficulty_mode = "hard"
+                    win_rate = difficulty_modes["hard"]["win_rate"]
+                elif btn_crazy.collidepoint(pos):
+                    difficulty_mode = "crazy"
+                    win_rate = difficulty_modes["crazy"]["win_rate"]
+                
                 # --- 調整下注金額 ---
                 if btn_bet_up.collidepoint(pos) and not game_active:
                     bet_index = min(bet_index + 1, len(bet_options) - 1)
@@ -347,10 +403,11 @@ while running:
         if chicken_x > target_x:
             chicken_x = target_x
 
-    # 繪製小雞
+    # 繪製小雞（應用相機偏移）
     color = RED if game_over else (GREEN if cashed_out else YELLOW)
-    pygame.draw.rect(screen, color, (chicken_x, chicken_y, 40, 40), border_radius=5)
-    pygame.draw.rect(screen, BLACK, (chicken_x, chicken_y, 40, 40), 2, border_radius=5)
+    display_chicken_x = chicken_x - camera_offset
+    pygame.draw.rect(screen, color, (display_chicken_x, chicken_y, 40, 40), border_radius=5)
+    pygame.draw.rect(screen, BLACK, (display_chicken_x, chicken_y, 40, 40), 2, border_radius=5)
     
     # 繪製提示文字
     if hint_timer > 0:
@@ -377,6 +434,17 @@ while running:
         draw_button(btn_speed_rect, f"速度: ×{game_speed}", LIGHT_BLUE)
     else:
         draw_button(btn_speed_rect, f"速度: ×{game_speed}", GRAY)
+    
+    # 難度模式選擇（總是顯示，根據選擇狀態改變顏色）
+    easy_color = LIGHT_BLUE if difficulty_mode == "easy" else GRAY
+    normal_color = YELLOW if difficulty_mode == "normal" else GRAY
+    hard_color = RED if difficulty_mode == "hard" else GRAY
+    crazy_color = (255, 50, 150) if difficulty_mode == "crazy" else GRAY  # 深粉紅
+    
+    draw_button(btn_easy, "簡單", easy_color)
+    draw_button(btn_normal, "普通", normal_color)
+    draw_button(btn_hard, "困難", hard_color)
+    draw_button(btn_crazy, "瘋狂", crazy_color)
     
     # 目標步數
     screen.blit(font.render(f"目標: {target_stop_step} 步", True, BLACK), (720, 30))
