@@ -197,110 +197,77 @@ def run_to_userlist_and_fill(username: str, password: str, target_account: str, 
         frame = find_frame_containing(page)
         if not frame:
             raise RuntimeError("找不到包含 Code / Handicap 的 iframe")
-        log("✅ 找到 Code/Handicap 的 iframe，準備勾選 Code=4 那列…")
+        log("✅ 找到 Code/Handicap 的 iframe")
+        # 1. 定義分組清單
+# 1. 定義分組
+        groups = {
+            "群組 A (4, 8, 13, 17, 58)": ["4", "8", "13", "17", "58"],
+            "群組 B (21, 23, 25, 27, 172)": ["21", "23", "25", "27", "172"]
+        }
+
+        # 確保頁面加載
         frame.locator("text=Code").first.wait_for(state="visible", timeout=15000)
-        target_code = "4"
 
-        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
-        code_badge.wait_for(state="visible", timeout=15000)
+        for group_name, codes in groups.items():
+            log(f"\n--- 正在處理 {group_name} ---")
+            
+            for code in codes:
+                try:
+                    # 定義號碼定位器
+                    code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{code}']").first
+                    code_badge.wait_for(state="visible", timeout=5000)
 
-        # 找同一排、在它前面的第一個 checkbox 容器（依你圖是 span::before）
-        box = code_badge.locator("xpath=preceding::span[1]").first
-        box.wait_for(state="attached", timeout=15000)
+                    # 找前面的 Checkbox 容器 (span)
+                    box = code_badge.locator("xpath=preceding::span[1]").first
+                    
+                    # --- 強化版狀態偵測 ---
+                    # 獲取 class 屬性，若無則預設為空字串避免 .lower() 報錯
+                    class_attr = box.get_attribute("class") or ""
+                    
+                    # 判斷方式：檢查 class 是否含 checked 或是否有 ✓ 符號
+                    is_checked = "checked" in class_attr.lower() or "✓" in box.inner_text()
+                    
+                    status_text = "【V 已勾選】" if is_checked else "【X 未勾選】"
+                    
+                    # 執行點擊 (不論狀態，執行切換)
+                    click_target = box.locator("xpath=..").first
+                    click_target.click(force=True)
+                    
+                    log(f"號碼 {code.ljust(3)}: 原本 {status_text} -> 已執行切換")
 
-        # 點 box 的父層，因為 ::before 不能點
-        click_target = box.locator("xpath=..").first
-        click_target.click(force=True)
-        target_code = "8"
+                except Exception as e:
+                    # 捕捉錯誤，不讓程式因為某個號碼沒找到就中斷
+                    log(f"號碼 {code.ljust(3)}: ❌ 處理失敗 (找不到元素或超時)")
 
-        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
-        code_badge.wait_for(state="visible", timeout=15000)
+                except Exception as e:
+                    log(f"❌ 號碼 {code} 處理失敗: {str(e)}")
+        # # 1. 定義你想要點擊的所有號碼
+        # target_codes = ["4", "8", "13", "17", "58", "21", "23", "25", "27", "172"]
 
-        # 找同一排、在它前面的第一個 checkbox 容器（依你圖是 span::before）
-        box = code_badge.locator("xpath=preceding::span[1]").first
-        box.wait_for(state="attached", timeout=15000)
+        # # 2. 確保 Code 欄位已出現（只需做一次）
+        # frame.locator("text=Code").first.wait_for(state="visible", timeout=15000)
 
-        # 點 box 的父層，因為 ::before 不能點
-        click_target = box.locator("xpath=..").first
-        click_target.click(force=True)
-        target_code = "13"
+        # # 3. 使用迴圈自動執行重複動作
+        # for code in target_codes:
+        #     try:
+        #         # 定義目標數字的定位器
+        #         code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{code}']").first
+        #         code_badge.wait_for(state="visible", timeout=15000)
 
-        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
-        code_badge.wait_for(state="visible", timeout=15000)
+        #         # 找數字前面的第一個 span (checkbox 容器)
+        #         box = code_badge.locator("xpath=preceding::span[1]").first
+        #         box.wait_for(state="attached", timeout=15000)
 
-        # 找同一排、在它前面的第一個 checkbox 容器（依你圖是 span::before）
-        box = code_badge.locator("xpath=preceding::span[1]").first
-        box.wait_for(state="attached", timeout=15000)
-
-        # 點 box 的父層，因為 ::before 不能點
-        click_target = box.locator("xpath=..").first
-        click_target.click(force=True)
-
-        target_code = "17"
-        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
-        code_badge.wait_for(state="visible", timeout=15000)
-        # 找同一排、在它前面的第一個 checkbox 容器（依你圖是 span::before）
-        box = code_badge.locator("xpath=preceding::span[1]").first
-        box.wait_for(state="attached", timeout=15000)
-        click_target = box.locator("xpath=..").first
-        click_target.click(force=True)
-        target_code = "58"
-        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
-        code_badge.wait_for(state="visible", timeout=15000)
-
-        box = code_badge.locator("xpath=preceding::span[1]").first
-        box.wait_for(state="attached", timeout=15000)
-
-        click_target = box.locator("xpath=..").first
-        click_target.click(force=True)
-        target_code = "21"
-        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
-        code_badge.wait_for(state="visible", timeout=15000)
-
-        box = code_badge.locator("xpath=preceding::span[1]").first
-        box.wait_for(state="attached", timeout=15000)
-
-        click_target = box.locator("xpath=..").first
-        click_target.click(force=True)
-        target_code = "23"
-        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
-        code_badge.wait_for(state="visible", timeout=15000)
-
-        box = code_badge.locator("xpath=preceding::span[1]").first
-        box.wait_for(state="attached", timeout=15000)
-
-        click_target = box.locator("xpath=..").first
-        click_target.click(force=True)
-        target_code = "25"
-        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
-        code_badge.wait_for(state="visible", timeout=15000)
-
-        box = code_badge.locator("xpath=preceding::span[1]").first
-        box.wait_for(state="attached", timeout=15000)
-
-        click_target = box.locator("xpath=..").first
-        click_target.click(force=True)
-        target_code = "27"
-        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
-        code_badge.wait_for(state="visible", timeout=15000)
-
-        box = code_badge.locator("xpath=preceding::span[1]").first
-        box.wait_for(state="attached", timeout=15000)
-
-        click_target = box.locator("xpath=..").first
-        click_target.click(force=True)
-        target_code = "172"
-        code_badge = frame.locator(f"xpath=//*[normalize-space(text())='{target_code}']").first
-        code_badge.wait_for(state="visible", timeout=15000)
-
-        box = code_badge.locator("xpath=preceding::span[1]").first
-        box.wait_for(state="attached", timeout=15000)
-
-        click_target = box.locator("xpath=..").first
-        click_target.click(force=True)
+        #         # 點擊 box 的父層
+        #         click_target = box.locator("xpath=..").first
+        #         click_target.click(force=True)
+                
+        #         print(f"成功點擊號碼: {code}")
+        #     except Exception as e:
+        #         print(f"點擊號碼 {code} 時發生錯誤: {e}")
 
 
-        log(f"✅ 已點擊 Code={target_code} 那列的 checkbox 欄位")
+        # log(f"✅ 已點擊 Code={target_codes} 那列的 checkbox 欄位")
 
 
 
