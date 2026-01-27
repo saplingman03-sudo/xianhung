@@ -1,5 +1,6 @@
 from logging import log
 import os
+import re
 import threading
 import traceback
 import tkinter as tk
@@ -340,14 +341,13 @@ def run_site_E(username: str, password: str, target_list: list, headless: bool, 
         username_link.click(force=True)
 
         log("✅ SiteE：已點擊第一筆 Username")
-        
         for target_account in target_list:
             page.evaluate("window.scrollTo(0, 0)")
             page.wait_for_timeout(300)
             log(f"🔎 將 Username 搜尋改為：{target_account}")
 
             # 1️⃣ 等 Username 搜尋框
-            username_input = page.locator('input[name="username"], input[placeholder="Username"]').first
+            username_input = page.locator('input[name="searchUserName"], input[placeholder="Username"]').first
             username_input.wait_for(state="visible", timeout=15000)
 
             # 2️⃣ 清空（一定要這樣，不要只用 fill）
@@ -356,18 +356,48 @@ def run_site_E(username: str, password: str, target_list: list, headless: bool, 
             username_input.press("Backspace")
 
             # 3️⃣ 輸入 target account
-            username_input.fill(target_account)
+            username_input.fill(f"{target_account}@a13154")
 
             # 4️⃣ 點 Search
             search_btn = page.locator('button:has-text("Search")').first
             search_btn.click(force=True)
 
             log("✅ 已送出 Username 搜尋")
+            member_table = page.locator("table").nth(1)
 
+            bet_icon = member_table.locator("i.icon-betlimit").first
+            bet_icon.wait_for(state="visible", timeout=15000)
+            bet_icon.scroll_into_view_if_needed()
+            page.wait_for_timeout(200)
 
+            # 方案 A：先點外層（很多時候真正可點的是 a/button/td）
+            try:
+                bet_clickable = bet_icon.locator("xpath=ancestor::a[1] | ancestor::button[1] | ancestor::td[1]").first
+                bet_clickable.click(timeout=3000)
+                log("✅ Bet Limit：已點外層容器")
+            except Exception as e1:
+                log(f"⚠️ 外層點擊失敗，改用中心點座標點擊：{e1}")
 
+                # 方案 B：中心點座標點擊（必殺）
+                box = bet_icon.bounding_box()
+                if not box:
+                    raise RuntimeError("抓不到 Bet Limit icon 的 bounding box（可能被遮住或不在視窗內）")
 
+                x = box["x"] + box["width"] / 2
+                y = box["y"] + box["height"] / 2
 
+                page.mouse.click(x, y)
+                page.wait_for_timeout(200)
+
+                # 方案 C：再補一個 JS click（保險）
+                try:
+                    bet_icon.evaluate("(el) => el.click()")
+                    log("✅ Bet Limit：中心點 + JS click 補刀完成")
+                except Exception as e2:
+                    log(f"⚠️ JS click 也失敗：{e2}")
+
+            log("🎯 已嘗試點擊 Bet Limit icon（外層/中心點/JS）")
+            
         if not headless:
             input("⏸ SA 停在頁面，確認後按 Enter 繼續…")
 
