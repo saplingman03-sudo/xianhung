@@ -397,35 +397,89 @@ def run_site_E(username: str, password: str, target_list: list, headless: bool, 
                     log(f"⚠️ JS click 也失敗：{e2}")
 
 
+            log("🎯 開始處理 Bet Limit 設定...")
 
-
-            log_fn("🧪 用標題反查包含 Min/Max 的容器（不靠 modal class）")
-
+            # 等待彈窗出現
+            page.wait_for_timeout(1500)
+            
+            # 找到包含 Min/Max 的表格
             title = page.get_by_text("Game Bet Limit Options", exact=False).first
-
-            # 找最近的祖先：同時含 Min 與 Max
-            container = title.locator(
-                "xpath=ancestor::*[.//text()[contains(.,'Min')] and .//text()[contains(.,'Max')]][1]"
-            )
-
-            log_fn(f"DEBUG: container count = {container.count()}")
-
-            if container.count() == 0:
-                log_fn("❌ 由標題往上找不到含 Min/Max 的容器（可能文字被拆或不是 text node）")
-                return
-
-            # 在容器內再確認一次文字
-            s_cnt = container.get_by_text("Setting", exact=False).count()
-            min_cnt = container.get_by_text("Min", exact=False).count()
-            max_cnt = container.get_by_text("Max", exact=False).count()
-
-            log_fn(f"✅ 容器內文字：Setting={s_cnt}, Min={min_cnt}, Max={max_cnt}")
-
-            # 額外：dump 這個容器內所有 th 文字（前 30 個）
-            ths = [x.strip() for x in container.locator("th").all_inner_texts()]
-            log_fn(f"DEBUG: th count = {len(ths)} | " + " | ".join(ths[:30]))
-
-
+            title.wait_for(state="visible", timeout=10000)
+            
+            log("✅ Bet Limit 彈窗已開啟")
+            
+            # === 步驟 1: 取消勾選 Min=100, Max=20,000 ===
+            try:
+                # 找到所有表格行
+                rows = page.locator("table tr").all()
+                
+                for row in rows:
+                    try:
+                        # 獲取該行的 Min 和 Max 文字
+                        cells = row.locator("td").all()
+                        if len(cells) < 3:
+                            continue
+                            
+                        # 檢查是否為 100 / 20,000 這一行
+                        min_text = cells[1].inner_text().strip().replace(",", "")
+                        max_text = cells[2].inner_text().strip().replace(",", "")
+                        
+                        if min_text == "100" and max_text == "20000":
+                            # 找到這一行的 checkbox
+                            checkbox = row.locator("input[type='checkbox']").first
+                            
+                            # 檢查是否已勾選
+                            is_checked = checkbox.is_checked()
+                            
+                            if is_checked:
+                                checkbox.click(force=True)
+                                log("✅ 已取消勾選：Min=100, Max=20,000")
+                            else:
+                                log("ℹ️  Min=100, Max=20,000 原本就未勾選")
+                            
+                            break
+                    except:
+                        continue
+                        
+            except Exception as e:
+                log(f"⚠️  取消勾選 100/20000 時發生錯誤: {e}")
+            
+            page.wait_for_timeout(500)
+            
+            # === 步驟 2: 勾選 Min=100, Max=10,000 ===
+            try:
+                rows = page.locator("table tr").all()
+                
+                for row in rows:
+                    try:
+                        cells = row.locator("td").all()
+                        if len(cells) < 3:
+                            continue
+                            
+                        # 檢查是否為 100 / 10,000 這一行
+                        min_text = cells[1].inner_text().strip().replace(",", "")
+                        max_text = cells[2].inner_text().strip().replace(",", "")
+                        
+                        if min_text == "100" and max_text == "10000":
+                            checkbox = row.locator("input[type='checkbox']").first
+                            
+                            is_checked = checkbox.is_checked()
+                            
+                            if not is_checked:
+                                checkbox.click(force=True)
+                                log("✅ 已勾選：Min=100, Max=10,000")
+                            else:
+                                log("ℹ️  Min=100, Max=10,000 原本就已勾選")
+                            
+                            break
+                    except:
+                        continue
+                        
+            except Exception as e:
+                log(f"⚠️  勾選 100/10000 時發生錯誤: {e}")
+            
+            page.wait_for_timeout(500)
+            log("🎉 Bet Limit 設定完成")
 
                         
 
