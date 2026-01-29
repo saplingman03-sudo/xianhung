@@ -396,7 +396,39 @@ def run_site_E(username: str, password: str, target_list: list, headless: bool, 
                 except Exception as e2:
                     log(f"⚠️ JS click 也失敗：{e2}")
 
-            log("🎯 已嘗試點擊 Bet Limit icon（外層/中心點/JS）")
+
+
+
+            log_fn("🧪 用標題反查包含 Min/Max 的容器（不靠 modal class）")
+
+            title = page.get_by_text("Game Bet Limit Options", exact=False).first
+
+            # 找最近的祖先：同時含 Min 與 Max
+            container = title.locator(
+                "xpath=ancestor::*[.//text()[contains(.,'Min')] and .//text()[contains(.,'Max')]][1]"
+            )
+
+            log_fn(f"DEBUG: container count = {container.count()}")
+
+            if container.count() == 0:
+                log_fn("❌ 由標題往上找不到含 Min/Max 的容器（可能文字被拆或不是 text node）")
+                return
+
+            # 在容器內再確認一次文字
+            s_cnt = container.get_by_text("Setting", exact=False).count()
+            min_cnt = container.get_by_text("Min", exact=False).count()
+            max_cnt = container.get_by_text("Max", exact=False).count()
+
+            log_fn(f"✅ 容器內文字：Setting={s_cnt}, Min={min_cnt}, Max={max_cnt}")
+
+            # 額外：dump 這個容器內所有 th 文字（前 30 個）
+            ths = [x.strip() for x in container.locator("th").all_inner_texts()]
+            log_fn(f"DEBUG: th count = {len(ths)} | " + " | ".join(ths[:30]))
+
+
+
+                        
+
             
         if not headless:
             input("⏸ SA 停在頁面，確認後按 Enter 繼續…")
