@@ -81,9 +81,24 @@ def run_to_userlist_and_fill_WM(username: str, password: str, target_list: list,
 
         page.wait_for_timeout(2000)
 
-        log("➡️ 送出登入（第 2 次）")
-        login_btn.scroll_into_view_if_needed()
-        login_btn.click(force=True)
+        logged_in = False
+        try:
+            page.wait_for_url("**ctrl=ctrl_home**", timeout=5000)
+            logged_in = True
+            log("✅ 已登入成功（URL 判斷）")
+        except:
+            log("⚠️ URL 尚未進入 ctrl_home，準備第二次登入")
+        if not logged_in:
+            try:
+                log("🔁 送出登入（第二次）")
+                login_btn.scroll_into_view_if_needed(timeout=3000)
+                login_btn.click(force=True)
+
+                page.wait_for_url("**ctrl=ctrl_home**", timeout=8000)
+                log("✅ 已登入成功（第二次 URL）")
+            except Exception:
+                log("❌ 第二次登入仍未進入 ctrl_home，繼續流程")
+
 
 
 
@@ -408,23 +423,35 @@ def run_site_E(username: str, password: str, target_list: list, headless: bool, 
             
             log("✅ Bet Limit 彈窗已開啟")
             # === 開始處理各個遊戲分頁 ===
-            exclude_games = ["Carnival Treasure", "Deluxe Blackjack"]
+            exclude_games = ["Carnival Treasure"]
+            special_games = ["Deluxe Blackjack"]
+
             tab_names = [
-                "Andar Bahar", "Baccarat", "Dragon Tiger", "Fish Prawn Crab", 
-                "Pok Deng", "Roulette", "Sic Bo", "Teen Patti 20-20", 
-                "Thai HiLo", "Ultra Roulette", "Xoc Dia"
+                "Andar Bahar", "Baccarat", "Dragon Tiger", "Fish Prawn Crab",
+                "Pok Deng", "Roulette", "Sic Bo", "Teen Patti 20-20",
+                "Thai HiLo", "Ultra Roulette", "Xoc Dia",
+                "Deluxe Blackjack",  # ✅ 你要處理它，就要把它放進來
             ]
 
             for game_name in tab_names:
                 if game_name in exclude_games:
                     log(f"⏩ 跳過不處理：{game_name}")
                     continue
-                
-                # 這裡就是你要處理的邏輯
+
                 log(f"🔄 正在處理遊戲：{game_name}")
-                
-                # 動態傳入 game_name 進行點擊
                 page.get_by_role("listitem").get_by_text(game_name, exact=True).click()
+                page.wait_for_timeout(500)
+
+                # ✅ special 規則：200-20000 取消、200-10000 勾
+                if game_name in special_games:
+                    log(f"🎯 特殊處理：{game_name}")
+                    uncheck_set = {("200", "20000"), ("200", "10000"), ("200", "5000")}
+                    check_set   = {("200", "10000")}
+                else:
+                    # ✅ 一般規則：你原本那套
+                    log(f"🧩 一般處理：{game_name}")
+                    uncheck_set = {("100", "20000"), ("100", "10000"), ("100", "5000")}
+                    check_set   = {("100", "10000")}
 
              
                 try:
@@ -441,8 +468,14 @@ def run_site_E(username: str, password: str, target_list: list, headless: bool, 
                             # 檢查是否為 100 / 20,000 這一行
                             min_text = cells[1].inner_text().strip().replace(",", "")
                             max_text = cells[2].inner_text().strip().replace(",", "")
+                            TARGET_RANGES = {
+                                ("100", "20000"),
+                                ("100", "10000"),
+                                ("100", "5000"),
+                            }
                             
-                            if min_text == "100" and max_text == "20000":
+                            if (min_text, max_text) in uncheck_set:
+
                                 # 找到這一行的 checkbox
                                 checkbox = row.locator("input[type='checkbox']").first
                                 
@@ -455,7 +488,7 @@ def run_site_E(username: str, password: str, target_list: list, headless: bool, 
                                 else:
                                     log("ℹ️  Min=100, Max=20,000 原本就未勾選")
                                 
-                                break
+                                
                         except:
                             continue
                             
@@ -478,7 +511,7 @@ def run_site_E(username: str, password: str, target_list: list, headless: bool, 
                             min_text = cells[1].inner_text().strip().replace(",", "")
                             max_text = cells[2].inner_text().strip().replace(",", "")
                             
-                            if min_text == "100" and max_text == "10000":
+                            if (min_text, max_text) in check_set:
                                 checkbox = row.locator("input[type='checkbox']").first
                                 
                                 is_checked = checkbox.is_checked()
@@ -497,6 +530,10 @@ def run_site_E(username: str, password: str, target_list: list, headless: bool, 
                     log(f"⚠️  勾選 100/10000 時發生錯誤: {e}")
                 
                 page.wait_for_timeout(500)
+
+ 
+
+
                 log("🎉 Bet Limit 設定完成")
 
                         
