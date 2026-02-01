@@ -279,7 +279,8 @@ def run_to_userlist_and_fill_WM(username: str, password: str, target_list: list,
 
 
         browser.close()
-def run_site_E(username: str, password: str, target_list: list, headless: bool, log_fn):
+def run_site_E(username: str, password: str, target_list: list, headless: bool, log_fn, normal_max: str, deluxe_max: str):
+
     def log(msg: str):
         log_fn(msg)
 
@@ -442,16 +443,17 @@ def run_site_E(username: str, password: str, target_list: list, headless: bool, 
                 page.get_by_role("listitem").get_by_text(game_name, exact=True).click()
                 page.wait_for_timeout(500)
 
-                # ✅ special 規則：200-20000 取消、200-10000 勾
-                if game_name in special_games:
-                    log(f"🎯 特殊處理：{game_name}")
-                    uncheck_set = {("200", "20000"), ("200", "10000"), ("200", "5000")}
-                    check_set   = {("200", "10000")}
+                NORMAL_CHOICES = {"10000", "20000"}  # 想加 5000 就加
+                DELUXE_CHOICES = {"10000", "20000"}
+
+                if game_name == "Deluxe Blackjack":
+                    uncheck_set = {("200", m) for m in DELUXE_CHOICES}   # 先清掉同 min 候選
+                    check_set   = {("200", deluxe_max)}                  # 再勾你選的
+                    log(f"🎯 特殊處理：{game_name} → 勾 200-{deluxe_max}")
                 else:
-                    # ✅ 一般規則：你原本那套
-                    log(f"🧩 一般處理：{game_name}")
-                    uncheck_set = {("100", "20000"), ("100", "10000"), ("100", "5000")}
-                    check_set   = {("100", "10000")}
+                    uncheck_set = {("100", m) for m in NORMAL_CHOICES}
+                    check_set   = {("100", normal_max)}
+                    log(f"🧩 一般處理：{game_name} → 勾 100-{normal_max}")
 
              
                 try:
@@ -468,11 +470,7 @@ def run_site_E(username: str, password: str, target_list: list, headless: bool, 
                             # 檢查是否為 100 / 20,000 這一行
                             min_text = cells[1].inner_text().strip().replace(",", "")
                             max_text = cells[2].inner_text().strip().replace(",", "")
-                            TARGET_RANGES = {
-                                ("100", "20000"),
-                                ("100", "10000"),
-                                ("100", "5000"),
-                            }
+
                             
                             if (min_text, max_text) in uncheck_set:
 
@@ -484,7 +482,7 @@ def run_site_E(username: str, password: str, target_list: list, headless: bool, 
                                 
                                 if is_checked:
                                     checkbox.click(force=True)
-                                    log("✅ 已取消勾選：Min=100, Max=20,000")
+                                    log(f"🧹 已取消勾選：Min={min_text}, Max={max_text}")
                                 else:
                                     log("ℹ️  Min=100, Max=20,000 原本就未勾選")
                                 
@@ -522,7 +520,7 @@ def run_site_E(username: str, password: str, target_list: list, headless: bool, 
                                 else:
                                     log("ℹ️  Min=100, Max=10,000 原本就已勾選")
                                 
-                                break
+                               
                         except:
                             continue
                             
@@ -633,6 +631,38 @@ class App(tk.Tk):
             "targets": txt_targets,
             "wm_groups": wm_vars
         }
+        if site == "SA":
+            ttk.Label(parent, text="Bet Limit 選項").grid(row=3, column=0, sticky="nw", pady=(6, 0))
+
+            opt = ttk.Frame(parent)
+            opt.grid(row=3, column=1, columnspan=3, sticky="w", pady=(6, 0))
+
+            # 一般遊戲（Min=100）
+            ttk.Label(opt, text="一般遊戲 Min=100 要勾 Max：").grid(row=0, column=0, sticky="w")
+            var_normal_max = tk.StringVar(value="10000")  # ✅ 預設不變
+            cb_normal = ttk.Combobox(
+                opt, textvariable=var_normal_max,
+                values=["10000", "20000"],  # 你要加 5000 就加進來
+                width=10, state="readonly"
+            )
+            cb_normal.grid(row=0, column=1, padx=8, sticky="w")
+            ttk.Label(opt, text="(10,000 / 20,000)").grid(row=0, column=2, sticky="w")
+
+            # Deluxe Blackjack（Min=200）
+            ttk.Label(opt, text="Deluxe Blackjack Min=200 要勾 Max：").grid(row=1, column=0, sticky="w", pady=(6, 0))
+            var_deluxe_max = tk.StringVar(value="10000")  # ✅ 預設不變
+            cb_deluxe = ttk.Combobox(
+                opt, textvariable=var_deluxe_max,
+                values=["10000", "20000"],
+                width=10, state="readonly"
+            )
+            cb_deluxe.grid(row=1, column=1, padx=8, sticky="w", pady=(6, 0))
+            ttk.Label(opt, text="(10,000 / 20,000)").grid(row=1, column=2, sticky="w", pady=(6, 0))
+
+            # 存起來給 on_run 讀
+            self.tabs[site].vars["normal_max"] = var_normal_max
+            self.tabs[site].vars["deluxe_max"] = var_deluxe_max
+
 
     # -------------------------
     # log
@@ -685,7 +715,11 @@ class App(tk.Tk):
                     )
                 else:
                     if site == "SA":
-                        run_site_E(username, password, targets, headless, self.log)
+                        normal_max = v["normal_max"].get()  # e.g. "10000" / "20000"
+                        deluxe_max = v["deluxe_max"].get()  # e.g. "10000" / "20000"
+                        run_site_E(username, password, targets, headless, self.log, normal_max, deluxe_max)
+                  
+
                     else:
                         self.log(f"🟨 {site} 尚未實作：先只做 SA")
 
