@@ -443,8 +443,8 @@ def run_site_E(username: str, password: str, target_list: list, headless: bool, 
                 page.get_by_role("listitem").get_by_text(game_name, exact=True).click()
                 page.wait_for_timeout(500)
 
-                NORMAL_CHOICES = {"10000", "20000"}  # 想加 5000 就加
-                DELUXE_CHOICES = {"10000", "20000"}
+                NORMAL_CHOICES = {"10000", "20000", "5000"}  # 想加 5000 就加
+                DELUXE_CHOICES = {"10000", "20000", "5000"}
 
                 if game_name == "Deluxe Blackjack":
                     uncheck_set = {("200", m) for m in DELUXE_CHOICES}   # 先清掉同 min 候選
@@ -642,18 +642,17 @@ class App(tk.Tk):
             var_normal_max = tk.StringVar(value="10000")  # ✅ 預設不變
             cb_normal = ttk.Combobox(
                 opt, textvariable=var_normal_max,
-                values=["10000", "20000"],  # 你要加 5000 就加進來
+                values=["10000", "20000", "5000"],  # 你要加 5000 就加進來
                 width=10, state="readonly"
             )
             cb_normal.grid(row=0, column=1, padx=8, sticky="w")
-            ttk.Label(opt, text="(10,000 / 20,000)").grid(row=0, column=2, sticky="w")
-
+            ttk.Label(opt, text="(10,000 / 20,000 / 5,000)").grid(row=0, column=2, sticky="w")
             # Deluxe Blackjack（Min=200）
             ttk.Label(opt, text="Deluxe Blackjack Min=200 要勾 Max：").grid(row=1, column=0, sticky="w", pady=(6, 0))
             var_deluxe_max = tk.StringVar(value="10000")  # ✅ 預設不變
             cb_deluxe = ttk.Combobox(
                 opt, textvariable=var_deluxe_max,
-                values=["10000", "20000"],
+                values=["10000", "20000", "5000"],  # 你要加 5000 就加進來
                 width=10, state="readonly"
             )
             cb_deluxe.grid(row=1, column=1, padx=8, sticky="w", pady=(6, 0))
