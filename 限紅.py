@@ -372,7 +372,7 @@ def run_site_E(username: str, password: str, target_list: list, headless: bool, 
             username_input.press("Backspace")
 
             # 3️⃣ 輸入 target account
-            username_input.fill(f"{target_account}@a13154")
+            username_input.fill(f"{target_account}@a14251")
 
             # 4️⃣ 點 Search
             search_btn = page.locator('button:has-text("Search")').first
